@@ -107,11 +107,6 @@ if command_exists apt-get; then
   apt-get update -qq
 fi
 
-# Install wget if not already installed
-if ! command_exists wget; then
-  install_package wget
-fi
-
 # Parse arguments
 install_ca_cert=false
 airnity_auth_key=""
