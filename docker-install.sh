@@ -57,7 +57,7 @@ ca_cert_path="/usr/local/share/ca-certificates/ca_bundle.crt"
 
 # Function to install CA certificate
 install_ca_certificate() {
-  echo "Installing CA certificate..."
+  echo "\nInstalling CA certificate..."
   # URL of the CA certificate file
   CERT_URL="https://raw.githubusercontent.com/airnity/public/main/ca_bundle.crt"
 
@@ -72,7 +72,7 @@ install_ca_certificate() {
   # Remove the downloaded certificate file
   rm -f /tmp/ca-certificate.pem
 
-  echo "CA certificate installed successfully."
+  echo "CA certificate installed successfully.\n"
 }
 
 # Function to add repository authentication keys and URL
@@ -107,7 +107,7 @@ configure_elixir_repo() {
     # Set CA certificates path
     mix hex.config cacerts_path "$ca_cert_path"
 
-    echo "Elixir repository configured successfully."
+    echo "Elixir repository configured successfully.\n"
   else
     echo "Error: Missing one or more required arguments: --airnity-elixir-repo-auth-key, --airnity-elixir-repo-api-key, --airnity-elixir-repo-url"
     exit 1
@@ -122,6 +122,7 @@ fi
 
 # Parse arguments
 install_ca_cert=false
+install_elixir_repo=false
 airnity_elixir_repo_auth_key=""
 airnity_elixir_repo_api_key=""
 airnity_elixir_repo_url="https://mini-repo.central.it.airnity.internal/repos/airnity"
@@ -131,9 +132,13 @@ for arg in "$@"; do
       install_ca_cert=true
       ;;
     --airnity-elixir-repo-auth-key=*)
+      install_elixir_repo=true
+      install_ca_cert=true
       airnity_elixir_repo_auth_key="${arg#*=}"
       ;;
     --airnity-elixir-repo-api-key=*)
+      install_elixir_repo=true
+      install_ca_cert=true
       airnity_elixir_repo_api_key="${arg#*=}"
       ;;
     --airnity-elixir-repo-url=*)
@@ -150,7 +155,7 @@ if $install_ca_cert; then
 fi
 
 # Configure Elixir repository if necessary arguments are provided
-if [ -n "$airnity_elixir_repo_auth_key" ] && [ -n "$airnity_elixir_repo_api_key" ] && [ -n "$airnity_elixir_repo_url" ]; then
+if $install_elixir_repo; then
   configure_elixir_repo "$airnity_elixir_repo_auth_key" "$airnity_elixir_repo_api_key" "$airnity_elixir_repo_url"
 fi
 
