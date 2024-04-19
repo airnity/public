@@ -53,6 +53,8 @@ download_file() {
   wget -qO "$2" "$1"
 }
 
+ca_cert_path="/usr/local/share/ca-certificates/ca_bundle.crt"
+
 # Function to install CA certificate
 install_ca_certificate() {
   echo "Installing CA certificate..."
@@ -64,7 +66,7 @@ install_ca_certificate() {
 
   # Install the CA certificate using the appropriate package manager
   install_package ca-certificates
-  cp /tmp/ca-certificate.pem /usr/local/share/ca-certificates/ca_bundle.crt
+  cp /tmp/ca-certificate.pem "$ca_cert_path"
   update-ca-certificates
 
   # Remove the downloaded certificate file
@@ -103,7 +105,7 @@ configure_elixir_repo() {
     mix hex.repo add airnity "$url" --public-key /tmp/elixir_repo_rsa_public.pem --auth-key "$auth_key"
 
     # Set CA certificates path
-    mix hex.config cacerts_path /usr/local/share/ca-certificates/ca_bundle.crt
+    mix hex.config cacerts_path "$ca_cert_path"
 
     echo "Elixir repository configured successfully."
   else
@@ -120,22 +122,22 @@ fi
 
 # Parse arguments
 install_ca_cert=false
-airnity_auth_key=""
-airnity_api_key=""
-airnity_repo_url=""
+airnity_elixir_repo_auth_key=""
+airnity_elixir_repo_api_key=""
+airnity_elixir_repo_url="https://mini-repo.central.it.airnity.internal/repos/airnity"
 for arg in "$@"; do
   case "$arg" in
     --airnity-ca)
       install_ca_cert=true
       ;;
     --airnity-elixir-repo-auth-key=*)
-      airnity_auth_key="${arg#*=}"
+      airnity_elixir_repo_auth_key="${arg#*=}"
       ;;
     --airnity-elixir-repo-api-key=*)
-      airnity_api_key="${arg#*=}"
+      airnity_elixir_repo_api_key="${arg#*=}"
       ;;
     --airnity-elixir-repo-url=*)
-      airnity_repo_url="${arg#*=}"
+      airnity_elixir_repo_url="${arg#*=}"
       ;;
     *)
       ;;
@@ -148,8 +150,8 @@ if $install_ca_cert; then
 fi
 
 # Configure Elixir repository if necessary arguments are provided
-if [ -n "$airnity_auth_key" ] && [ -n "$airnity_api_key" ] && [ -n "$airnity_repo_url" ]; then
-  configure_elixir_repo "$airnity_auth_key" "$airnity_api_key" "$airnity_repo_url"
+if [ -n "$airnity_elixir_repo_auth_key" ] && [ -n "$airnity_elixir_repo_api_key" ] && [ -n "$airnity_elixir_repo_url" ]; then
+  configure_elixir_repo "$airnity_elixir_repo_auth_key" "$airnity_elixir_repo_api_key" "$airnity_elixir_repo_url"
 fi
 
 # Uninstall temporary packages
