@@ -64,7 +64,7 @@ install_ca_certificate() {
 
   # Install the CA certificate using the appropriate package manager
   install_package ca-certificates
-  cp /tmp/ca-certificate.pem /usr/local/share/ca-certificates/ca-certificate.crt
+  cp /tmp/ca-certificate.pem /usr/local/share/ca-certificates/ca_bundle.crt
   update-ca-certificates
 
   # Remove the downloaded certificate file
