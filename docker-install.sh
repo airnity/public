@@ -8,9 +8,20 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
+package_installed() {
+  if command_exists apk; then
+    apk info --installed "$1" >/dev/null 2>&1
+  elif command_exists dpkg-query; then
+    dpkg-query -l "$1" >/dev/null 2>&1
+  else
+    echo "Unsupported package manager."
+    exit 1
+  fi
+}
+
 # Function to install a package using apk (Alpine Linux)
 install_package_apk() {
-  if ! command_exists "$1"; then
+  if ! package_installed "$1"; then
     apk add --no-cache "$1"
     installed_packages="${installed_packages} $1"
   fi
@@ -18,7 +29,7 @@ install_package_apk() {
 
 # Function to install a package using apt (Debian/Ubuntu)
 install_package_apt() {
-  if ! command_exists "$1"; then
+  if ! package_installed "$1"; then
     apt-get install -y -qq "$1"
     installed_packages="${installed_packages} $1"
   fi
