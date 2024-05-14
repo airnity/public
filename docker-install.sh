@@ -91,8 +91,7 @@ install_gcloud() {
   # Download and install Google Cloud SDK
   curl -sSL https://sdk.cloud.google.com | bash
 
-  gcloud components install beta --quiet
-  gcloud components install gke-cloud-auth-plugin --quiet
+  /root/google-cloud-sdk/bin/gcloud components install beta gke-gcloud-auth-plugin --quiet
 
   echo "Google Cloud SDK installed successfully.\n"
 }
