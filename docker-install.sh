@@ -23,7 +23,10 @@ package_installed() {
 install_package_apk() {
   if ! package_installed "$1"; then
     apk add --no-cache "$1"
-    installed_packages="${installed_packages} $1"
+    if [ "$2" != "true" ]; then
+      echo "Adding $1 to installed packages..."
+      installed_packages="${installed_packages} $1"
+    fi
   fi
 }
 
@@ -31,16 +34,19 @@ install_package_apk() {
 install_package_apt() {
   if ! package_installed "$1"; then
     apt-get install -y -qq "$1"
-    installed_packages="${installed_packages} $1"
+    if [ "$2" != "true" ]; then
+      echo "Adding $1 to installed packages..."
+      installed_packages="${installed_packages} $1"
+    fi
   fi
 }
 
 # Function to install a package using the appropriate package manager
 install_package() {
   if command_exists apk; then
-    install_package_apk "$1"
+    install_package_apk "$1" "$2"
   elif command_exists apt-get; then
-    install_package_apt "$1"
+    install_package_apt "$1" "$2"
   else
     echo "Unsupported package manager."
     exit 1
@@ -73,6 +79,22 @@ install_ca_certificate() {
   rm -f /tmp/ca-certificate.pem
 
   echo "CA certificate installed successfully.\n"
+}
+
+install_gcloud() {
+  echo "Installing Google Cloud SDK..."
+
+  install_package curl
+  install_package bash
+  install_package python3 true
+
+  # Download and install Google Cloud SDK
+  curl -sSL https://sdk.cloud.google.com | bash
+
+  gcloud components install beta --quiet
+  gcloud components install gke-cloud-auth-plugin --quiet
+
+  echo "Google Cloud SDK installed successfully.\n"
 }
 
 # Function to add repository authentication keys and URL
@@ -123,6 +145,7 @@ fi
 # Parse arguments
 install_ca_cert=false
 install_elixir_repo=false
+install_gcloud=false
 airnity_elixir_repo_auth_key=""
 airnity_elixir_repo_api_key=""
 airnity_elixir_repo_url="https://mini-repo.central.it.airnity.internal/repos/airnity"
@@ -144,6 +167,9 @@ for arg in "$@"; do
     --airnity-elixir-repo-url=*)
       airnity_elixir_repo_url="${arg#*=}"
       ;;
+    --gcloud)
+      install_gcloud=true
+      ;;
     *)
       ;;
   esac
@@ -157,6 +183,11 @@ fi
 # Configure Elixir repository if necessary arguments are provided
 if $install_elixir_repo; then
   configure_elixir_repo "$airnity_elixir_repo_auth_key" "$airnity_elixir_repo_api_key" "$airnity_elixir_repo_url"
+fi
+
+# Install Google Cloud SDK if --gcloud argument is present
+if $install_gcloud; then
+  install_gcloud
 fi
 
 # Uninstall temporary packages
