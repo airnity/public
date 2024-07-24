@@ -21,9 +21,9 @@ command_exists() {
 
 package_installed() {
   if command_exists apk; then
-    run_with_sudo apk info --installed "$1" >/dev/null 2>&1
+    apk info --installed "$1" >/dev/null 2>&1
   elif command_exists dpkg-query; then
-    run_with_sudo dpkg-query -l "$1" >/dev/null 2>&1
+    dpkg-query -l "$1" >/dev/null 2>&1
   else
     echo "Unsupported package manager."
     exit 1
@@ -67,7 +67,7 @@ install_package() {
 # Function to download a file
 download_file() {
   install_package wget
-  run_with_sudo wget -qO "$2" "$1"
+  wget -qO "$2" "$1"
 }
 
 ca_cert_path="/usr/local/share/ca-certificates/ca_bundle.crt"
@@ -83,7 +83,7 @@ install_ca_certificate() {
   run_with_sudo cp /tmp/ca-certificate.pem "$ca_cert_path"
   run_with_sudo update-ca-certificates
 
-  run_with_sudo rm -f /tmp/ca-certificate.pem
+  rm -f /tmp/ca-certificate.pem
 
   echo "CA certificate installed successfully.\n"
 }
@@ -95,9 +95,9 @@ install_gcloud() {
   install_package bash
   install_package python3 true
 
-  curl -sSL https://sdk.cloud.google.com | run_with_sudo bash
+  curl -sSL https://sdk.cloud.google.com | bash
 
-  run_with_sudo /root/google-cloud-sdk/bin/gcloud components install beta gke-gcloud-auth-plugin --quiet
+  /root/google-cloud-sdk/bin/gcloud components install beta gke-gcloud-auth-plugin --quiet
 
   echo "export PATH=\$PATH:/root/google-cloud-sdk/bin" >> ~/.bashrc
 
@@ -117,17 +117,17 @@ configure_elixir_repo() {
     fi
 
     echo "Configuring Elixir repository..."
-    run_with_sudo mkdir -p ~/.airnity/
+    mkdir -p ~/.airnity/
 
-    echo "$api_key" | run_with_sudo tee ~/.airnity/elixir_repo_api_key > /dev/null
+    echo "$api_key" > ~/.airnity/elixir_repo_api_key
 
     download_file "https://raw.githubusercontent.com/airnity/public/main/elixir_repo_rsa_public.pem" "/tmp/elixir_repo_rsa_public.pem"
 
-    run_with_sudo mix local.hex --force && run_with_sudo mix local.rebar --force
+    mix local.hex --force && mix local.rebar --force
 
-    run_with_sudo mix hex.repo add airnity "$url" --public-key /tmp/elixir_repo_rsa_public.pem --auth-key "$auth_key"
+    mix hex.repo add airnity "$url" --public-key /tmp/elixir_repo_rsa_public.pem --auth-key "$auth_key"
 
-    run_with_sudo mix hex.config cacerts_path "$ca_cert_path"
+    mix hex.config cacerts_path "$ca_cert_path"
 
     echo "Elixir repository configured successfully.\n"
   else
