@@ -1,5 +1,16 @@
 #!/bin/sh
 
+set -e
+
+# Function to run commands with sudo if not root
+run_with_sudo() {
+  if [ "$(id -u)" -ne 0 ]; then
+    sudo "$@"
+  else
+    "$@"
+  fi
+}
+
 # Variable to keep track of packages installed by the script
 installed_packages=""
 
@@ -10,9 +21,9 @@ command_exists() {
 
 package_installed() {
   if command_exists apk; then
-    apk info --installed "$1" >/dev/null 2>&1
+    run_with_sudo apk info --installed "$1" >/dev/null 2>&1
   elif command_exists dpkg-query; then
-    dpkg-query -l "$1" >/dev/null 2>&1
+    run_with_sudo dpkg-query -l "$1" >/dev/null 2>&1
   else
     echo "Unsupported package manager."
     exit 1
@@ -22,7 +33,7 @@ package_installed() {
 # Function to install a package using apk (Alpine Linux)
 install_package_apk() {
   if ! package_installed "$1"; then
-    apk add --no-cache "$1"
+    run_with_sudo apk add --no-cache "$1"
     if [ "$2" != "true" ]; then
       echo "Adding $1 to installed packages..."
       installed_packages="${installed_packages} $1"
@@ -33,7 +44,7 @@ install_package_apk() {
 # Function to install a package using apt (Debian/Ubuntu)
 install_package_apt() {
   if ! package_installed "$1"; then
-    apt-get install -y -qq "$1"
+    run_with_sudo apt-get install -y -qq "$1"
     if [ "$2" != "true" ]; then
       echo "Adding $1 to installed packages..."
       installed_packages="${installed_packages} $1"
@@ -56,7 +67,7 @@ install_package() {
 # Function to download a file
 download_file() {
   install_package wget
-  wget -qO "$2" "$1"
+  run_with_sudo wget -qO "$2" "$1"
 }
 
 ca_cert_path="/usr/local/share/ca-certificates/ca_bundle.crt"
@@ -64,19 +75,15 @@ ca_cert_path="/usr/local/share/ca-certificates/ca_bundle.crt"
 # Function to install CA certificate
 install_ca_certificate() {
   echo "\nInstalling CA certificate..."
-  # URL of the CA certificate file
   CERT_URL="https://raw.githubusercontent.com/airnity/public/main/ca_bundle.crt"
 
-  # Download the certificate
   download_file "$CERT_URL" "/tmp/ca-certificate.pem"
 
-  # Install the CA certificate using the appropriate package manager
   install_package ca-certificates
-  cp /tmp/ca-certificate.pem "$ca_cert_path"
-  update-ca-certificates
+  run_with_sudo cp /tmp/ca-certificate.pem "$ca_cert_path"
+  run_with_sudo update-ca-certificates
 
-  # Remove the downloaded certificate file
-  rm -f /tmp/ca-certificate.pem
+  run_with_sudo rm -f /tmp/ca-certificate.pem
 
   echo "CA certificate installed successfully.\n"
 }
@@ -88,17 +95,17 @@ install_gcloud() {
   install_package bash
   install_package python3 true
 
-  # Download and install Google Cloud SDK
-  curl -sSL https://sdk.cloud.google.com | bash
+  curl -sSL https://sdk.cloud.google.com | run_with_sudo bash
 
-  /root/google-cloud-sdk/bin/gcloud components install beta gke-gcloud-auth-plugin --quiet
+  run_with_sudo /root/google-cloud-sdk/bin/gcloud components install beta gke-gcloud-auth-plugin --quiet
+
+  echo "export PATH=\$PATH:/root/google-cloud-sdk/bin" >> ~/.bashrc
 
   echo "Google Cloud SDK installed successfully.\n"
 }
 
 # Function to add repository authentication keys and URL
 configure_elixir_repo() {
-  # Extract repository configuration from command-line arguments
   local auth_key="$1"
   local api_key="$2"
   local url="$3"
@@ -110,23 +117,17 @@ configure_elixir_repo() {
     fi
 
     echo "Configuring Elixir repository..."
-    # Create directory for configuration
-    mkdir -p ~/.airnity/
+    run_with_sudo mkdir -p ~/.airnity/
 
-    # Save API key to a file
-    echo "$api_key" >> ~/.airnity/elixir_repo_api_key
+    echo "$api_key" | run_with_sudo tee ~/.airnity/elixir_repo_api_key > /dev/null
 
-    # Download public key file
     download_file "https://raw.githubusercontent.com/airnity/public/main/elixir_repo_rsa_public.pem" "/tmp/elixir_repo_rsa_public.pem"
 
+    run_with_sudo mix local.hex --force && run_with_sudo mix local.rebar --force
 
-    mix local.hex --force && mix local.rebar --force
+    run_with_sudo mix hex.repo add airnity "$url" --public-key /tmp/elixir_repo_rsa_public.pem --auth-key "$auth_key"
 
-    # Add Elixir repository with authentication keys and URL
-    mix hex.repo add airnity "$url" --public-key /tmp/elixir_repo_rsa_public.pem --auth-key "$auth_key"
-
-    # Set CA certificates path
-    mix hex.config cacerts_path "$ca_cert_path"
+    run_with_sudo mix hex.config cacerts_path "$ca_cert_path"
 
     echo "Elixir repository configured successfully.\n"
   else
@@ -138,7 +139,7 @@ configure_elixir_repo() {
 # Update apt package index
 if command_exists apt-get; then
   echo "Updating package index..."
-  apt-get update -qq
+  run_with_sudo apt-get update -qq
 fi
 
 # Parse arguments
@@ -193,10 +194,10 @@ fi
 for pkg in $installed_packages; do
   echo "Removing $pkg..."
   if command_exists apk; then
-    apk del "$pkg"
+    run_with_sudo apk del "$pkg"
   elif command_exists apt-get; then
-    apt-get purge -y -qq "$pkg"
-    apt-get autoremove -y -qq
+    run_with_sudo apt-get purge -y -qq "$pkg"
+    run_with_sudo apt-get autoremove -y -qq
   fi
 done
 
