@@ -136,6 +136,26 @@ configure_elixir_repo() {
   fi
 }
 
+# Function to setup Git with GitHub App token
+setup_git_with_token() {
+  local token="$1"
+
+  if [ -n "$token" ]; then
+    echo "Setting up Git with GitHub App token..."
+
+    # Ensure Git is installed
+    install_package git
+
+    # Configure Git to use the token
+    git config --global url."https://x-access-token:${token}@github.com/".insteadOf "https://github.com/"
+
+    echo "Git configured successfully with GitHub App token.\n"
+  else
+    echo "Error: GitHub App token is empty."
+    exit 1
+  fi
+}
+
 # Update apt package index
 if command_exists apt-get; then
   echo "Updating package index..."
@@ -146,9 +166,12 @@ fi
 install_ca_cert=false
 install_elixir_repo=false
 install_gcloud=false
+setup_git=false
 airnity_elixir_repo_auth_key=""
 airnity_elixir_repo_api_key=""
 airnity_elixir_repo_url="https://mini-repo.central.it.airnity.internal/repos/airnity"
+gh_ci_token=""
+
 for arg in "$@"; do
   case "$arg" in
     --airnity-ca)
@@ -170,6 +193,10 @@ for arg in "$@"; do
     --gcloud)
       install_gcloud=true
       ;;
+    --gh-ci-token=*)
+      setup_git=true
+      gh_ci_token="${arg#*=}"
+      ;;
     *)
       ;;
   esac
@@ -188,6 +215,11 @@ fi
 # Install Google Cloud SDK if --gcloud argument is present
 if $install_gcloud; then
   install_gcloud
+fi
+
+# Setup Git with GitHub App token if --gh-ci-token is set and not empty
+if $setup_git; then
+  setup_git_with_token "$gh_ci_token"
 fi
 
 # Uninstall temporary packages
