@@ -23,7 +23,7 @@ package_installed() {
   if command_exists apk; then
     apk info --installed "$1" >/dev/null 2>&1
   elif command_exists dpkg-query; then
-    dpkg-query -l "$1" >/dev/null 2>&1
+    dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "install ok installed"
   else
     echo "Unsupported package manager."
     exit 1
