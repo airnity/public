@@ -64,10 +64,10 @@ install_package() {
   fi
 }
 
-# Function to download a file
+#Function to download a file
 download_file() {
-  install_package wget
-  wget -qO "$2" "$1"
+  install_package curl
+  curl -sSL "$1" -o "$2"
 }
 
 ca_cert_path="/usr/local/share/ca-certificates/ca_bundle.crt"
