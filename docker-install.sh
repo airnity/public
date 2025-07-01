@@ -94,19 +94,25 @@ install_gcloud() {
   install_package bash
   install_package python3 true
 
-  # Install to a system-wide location
+  # Set installation directory
   GCLOUD_DIR="/usr/local/google-cloud-sdk"
-  curl -sSL https://sdk.cloud.google.com | bash -s -- --install-dir=/usr/local --command-completion=false --path-update=false
 
+  # Download and run the installer with proper arguments
+  export CLOUDSDK_INSTALL_DIR="/usr/local"
+  export CLOUDSDK_CORE_DISABLE_PROMPTS=1
+
+  curl -sSL https://sdk.cloud.google.com | bash -s -- --disable-prompts --install-dir=/usr/local
+
+  # Install additional components
   run_with_sudo "$GCLOUD_DIR/bin/gcloud" components install beta gke-gcloud-auth-plugin --quiet
 
-  # Add to system-wide PATH
-  run_with_sudo sh -c "echo 'export PATH=\$PATH:$GCLOUD_DIR/bin' >> /etc/profile"
-
-  # Create symlinks in /usr/local/bin (which is typically in PATH)
+  # Create symlinks in /usr/local/bin for system-wide access
   run_with_sudo ln -sf "$GCLOUD_DIR/bin/gcloud" /usr/local/bin/gcloud
   run_with_sudo ln -sf "$GCLOUD_DIR/bin/gsutil" /usr/local/bin/gsutil
   run_with_sudo ln -sf "$GCLOUD_DIR/bin/bq" /usr/local/bin/bq
+
+  # Make sure the installation directory has proper permissions
+  run_with_sudo chmod -R 755 "$GCLOUD_DIR"
 
   echo "Google Cloud SDK installed successfully.\n"
 }
