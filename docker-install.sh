@@ -90,16 +90,23 @@ install_ca_certificate() {
 
 install_gcloud() {
   echo "Installing Google Cloud SDK..."
-
   install_package curl
   install_package bash
   install_package python3 true
 
-  curl -sSL https://sdk.cloud.google.com | bash
+  # Install to a system-wide location
+  GCLOUD_DIR="/usr/local/google-cloud-sdk"
+  curl -sSL https://sdk.cloud.google.com | bash -s -- --install-dir=/usr/local --command-completion=false --path-update=false
 
-  /root/google-cloud-sdk/bin/gcloud components install beta gke-gcloud-auth-plugin --quiet
+  run_with_sudo "$GCLOUD_DIR/bin/gcloud" components install beta gke-gcloud-auth-plugin --quiet
 
-  echo "export PATH=\$PATH:/root/google-cloud-sdk/bin" >> ~/.bashrc
+  # Add to system-wide PATH
+  run_with_sudo sh -c "echo 'export PATH=\$PATH:$GCLOUD_DIR/bin' >> /etc/profile"
+
+  # Create symlinks in /usr/local/bin (which is typically in PATH)
+  run_with_sudo ln -sf "$GCLOUD_DIR/bin/gcloud" /usr/local/bin/gcloud
+  run_with_sudo ln -sf "$GCLOUD_DIR/bin/gsutil" /usr/local/bin/gsutil
+  run_with_sudo ln -sf "$GCLOUD_DIR/bin/bq" /usr/local/bin/bq
 
   echo "Google Cloud SDK installed successfully.\n"
 }
