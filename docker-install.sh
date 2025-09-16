@@ -110,6 +110,7 @@ install_gcloud() {
   run_with_sudo ln -sf "$GCLOUD_DIR/bin/gcloud" /usr/local/bin/gcloud
   run_with_sudo ln -sf "$GCLOUD_DIR/bin/gsutil" /usr/local/bin/gsutil
   run_with_sudo ln -sf "$GCLOUD_DIR/bin/bq" /usr/local/bin/bq
+  run_with_sudo ln -sf "$GCLOUD_DIR/bin/gke-gcloud-auth-plugin" /usr/local/bin/gke-gcloud-auth-plugin
 
   # Make sure the installation directory has proper permissions
   run_with_sudo chmod -R 755 "$GCLOUD_DIR"
